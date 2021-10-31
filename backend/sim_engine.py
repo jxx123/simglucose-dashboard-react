@@ -4,7 +4,6 @@ import logging
 import time
 import os
 
-
 pathos = True
 try:
     from pathos.multiprocessing import ProcessPool as Pool
@@ -16,11 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class SimObj(object):
-    def __init__(self,
-                 env,
-                 controller,
-                 sim_time,
-                 path=None):
+    def __init__(self, env, controller, sim_time, path=None):
         self.env = env
         self.controller = controller
         self.sim_time = sim_time
@@ -33,8 +28,9 @@ class SimObj(object):
             experiment_name=experiment_name).first()
         while self.env.time < self.env.scenario.start_time + self.sim_time:
             action = self.controller.policy(obs, reward, done, **info)
+            print(f'Time: {info["time"]}, BG: {info["bg"]}')
             new_result = Result(patient_id=info["patient_name"],
-                                time=self.env.time,
+                                time=info["time"],
                                 reward=reward,
                                 cgm=obs.CGM,
                                 cho=info["meal"],
@@ -61,9 +57,12 @@ def batch_sim(sim_instances, experiment_name, parallel=False):
             results = []
     else:
         if parallel and not pathos:
-            print('Simulation is using single process even though parallel=True.')
+            print(
+                'Simulation is using single process even though parallel=True.'
+            )
         results = [s.simulate(experiment_name) for s in sim_instances]
-    finished_experiment = Experiment.query.filter_by(experiment_name=experiment_name).first()
+    finished_experiment = Experiment.query.filter_by(
+        experiment_name=experiment_name).first()
     finished_experiment.status = "completed"
     db.session.commit()
     db.session.close()

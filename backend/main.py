@@ -16,13 +16,13 @@ import pkg_resources
 import pandas as pd
 import platform
 
+# if db does not exist
 
 # Init schema
 result_schema = ResultSchema()
 results_schema = ResultSchema(many=True)
 
 experiment_schema = ExperimentSchema()
-
 
 PATIENT_PARA_FILE = pkg_resources.resource_filename(
     'simglucose', 'params/vpatient_params.csv')
@@ -34,12 +34,14 @@ def show_all_results():
     all_results = Result.query.all()
     return results_schema.jsonify(all_results)
 
+
 @app.route("/<experiment_name>")
 def show_curr_experiment(experiment_name):
     curr_experiment = Experiment.query.filter_by(
         experiment_name=experiment_name).first()
     db.session.commit()
     return experiment_schema.jsonify(curr_experiment)
+
 
 @app.route("/results/<experiment_name>")
 def show_curr_experiment_results(experiment_name):
@@ -55,11 +57,12 @@ def show_curr_experiment_results(experiment_name):
 @app.route("/simulate", methods=["POST"])
 def simulate():
     print(request.json)
-    
+
     experiment_name = request.json["experiment_name"]
     time = datetime.now()
-    new_experiment = Experiment(
-        experiment_name=experiment_name, time=time, status="pending")
+    new_experiment = Experiment(experiment_name=experiment_name,
+                                time=time,
+                                status="pending")
     db.session.add(new_experiment)
     db.session.commit()
     sim_time = timedelta(hours=float(request.json["sim_time"]))
@@ -69,16 +72,14 @@ def simulate():
     parallel = select_parallel()
     envs = build_env(scenario, start_time)
     ctrllers = [copy.deepcopy(controller) for _ in range(len(envs))]
-    sim_instances = [SimObj(e,
-                            c,
-                            sim_time,
-                            path=save_path) for (e, c) in zip(envs, ctrllers)]
-    
+    sim_instances = [
+        SimObj(e, c, sim_time, path=save_path)
+        for (e, c) in zip(envs, ctrllers)
+    ]
+
     batch_sim(sim_instances, experiment_name, parallel=parallel)
 
     return ""
-
-    
 
 
 @app.route("/test")

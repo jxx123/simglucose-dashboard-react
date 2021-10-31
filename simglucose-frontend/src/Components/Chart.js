@@ -32,6 +32,9 @@ const RenderLineChart = ({ results, patientName }) => {
   const filter_data = results.filter(
     (result) => result.patient_id === patientName
   );
+	filter_data.sort((a, b) => {
+		return new Date(a.time) - new Date(b.time);
+	})
   return (
     <>
       <h3>{patientName}</h3>
